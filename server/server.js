@@ -174,8 +174,6 @@ app.get('/signout', (req, res) => {
 });
 
 /* auth routes end ---------------------------------------------------------- */
-
-
 /**
  * Get Scrubbed Wikipedia Paragraph
  *
@@ -217,6 +215,7 @@ app.get('/addBookmark', (req, res) => {
         res.send('Added!');
       });
   });
+
 });
 
 app.get('/allBookmarks', (req, res) => {

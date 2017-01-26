@@ -41,7 +41,6 @@ module.exports.fetchWiki = function(req, res) {
       // Send response to client first (faster),
       // save to databases later (slower)
       res.status(200).send(paragraph);
-
       // Save to Redis
       const wikiFragment = req.query.exactWikiTitle;
       // redisClient.set(wikiFragment, paragraph, redis.print);
