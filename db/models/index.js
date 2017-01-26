@@ -1,14 +1,21 @@
 // This file makes all join table relationships
-var Sequelize = require('sequelize');
-var sequelize = new Sequelize('escape', 'escape', 'escapeacft', {
+const db = process.env.DB_DATABASE;
+const dbHost = process.env.DB_HOST;
+const dbUser = process.env.DB_USER;
+const dbPassword = process.env.DB_PASS;
+const Sequelize = require('sequelize');
+const sequelize = new Sequelize('escape', dbUser, dbPassword, {
   dialect: 'mariadb',
-  host: 'localhost'
+  host: dbHost
 });
 
-// Any vairable that starts with a capital letter is a model
-var User = require('./users.js')(sequelize, Sequelize);
-var Bookmark = require('./bookmarks.js')(sequelize, Sequelize);
-var BookmarkUsers = require('./bookmarkUsers')(sequelize, Sequelize);
+// Any variable that starts with a capital letter is a model
+const User = require('./users.js')(sequelize, Sequelize);
+const Bookmark = require('./bookmarks.js')(sequelize, Sequelize);
+const BookmarkUsers = require('./bookmarkUsers')(sequelize, Sequelize);
+const Photo = require('./photos.js')(sequelize, Sequelize);
+const Comment = require('./comments.js')(sequelize, Sequelize);
+const Like = require('./likes.js')(sequelize, Sequelize);
 
 // BookmarkUsers join table:
 User.belongsToMany(Bookmark, {
@@ -21,10 +28,43 @@ Bookmark.belongsToMany(User, {
   foreignKey: 'bookmark_id'
 });
 
+//Photos and Users
+User.hasMany(Photo, {
+  foreignKey: 'poster_id'
+});
 
+Photo.belongsTo(User, {
+  foreignKey: 'poster_id'
+});
+
+// Comments
+Photo.hasMany(Comment, {
+  foreignKey: 'photo_id'
+});
+
+Comment.belongsTo(Photo, {
+  foreignKey: 'photo_id'
+});
+
+// Likes
+User.belongsToMany(Photo, {
+  through: 'likes',
+  foreignKey: 'user_id'
+});
+
+Photo.belongsToMany(User, {
+  through: 'likes',
+  foreignKey: 'photo_id'
+});
+
+//Create missing tables, if any
 // sequelize.sync({force: true});
 sequelize.sync();
+
 
 exports.User = User;
 exports.Bookmark = Bookmark;
 exports.BookmarkUsers = BookmarkUsers;
+exports.Photo = Photo;
+exports.Comment = Comment;
+exports.Like = Like;

@@ -19,12 +19,21 @@ var APP_DIR = path.resolve(__dirname, 'react-client/src/index.jsx');
 // While developing your app in react, you'll want to have two terminal tabs open -
 // one that is running `npm run dev-react` and one that is running `npm start`
 module.exports = {
-  devtool: 'eval',
+  devtool: 'cheap-module-source-map',
   entry: APP_DIR,
   output: {
     path: BUILD_DIR,
     filename: 'bundle.js'
   },
+  plugins: [
+    new webpack.optimize.UglifyJsPlugin(),
+    new webpack.optimize.DedupePlugin(),
+    new webpack.DefinePlugin({
+      'process.env': {
+        'NODE_ENV': JSON.stringify('production')
+      }
+    })
+  ],
   module: {
     loaders: [
       {

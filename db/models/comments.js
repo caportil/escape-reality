@@ -1,5 +1,5 @@
 module.exports = (sequelize, Sequelize) => {
-  const User = sequelize.define('users', {
+  const Comment = sequelize.define('comments', {
     id: {
       type: Sequelize.INTEGER,
       primaryKey: true,
@@ -9,22 +9,16 @@ module.exports = (sequelize, Sequelize) => {
     email: {
       type: Sequelize.STRING
     },
-    password: {
+    body: {
       type: Sequelize.STRING
     },
-    profilePic: {
+    coordinates: {
       type: Sequelize.STRING
     },
     firstName: {
       type: Sequelize.STRING
-    },
-    lastName: {
-      type: Sequelize.STRING
-    },
-    lobbyPic: {
-      type: Sequelize.TEXT
     }
   });
 
-  return User;
+  return Comment;
 };

@@ -1,17 +1,85 @@
 import React from 'react';
 import { Link, withRouter } from 'react-router';
+import getMuiTheme from 'material-ui/styles/getMuiTheme';
+import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
+import TextField from 'material-ui/TextField';
+import RaisedButton from 'material-ui/RaisedButton';
+
+const style = {
+  fontFamily: 'Orbitron'
+};
+
+const backgroundStyle = {
+  backgroundSize: 'cover',
+  position: 'fixed',
+  flex: 1,
+  height: '100%',
+  width: '100%',
+}
 
 export default props => (
 
   <div className="signin">
-    <h1> Escape </h1>
-    <div className="signintitle"> Signin </div>
+
+    <img 
+      style={backgroundStyle}
+      src={'http://i.imgur.com/1ZEHnrH.jpg'}
+    />
+
+    <div>
+      <h1 className="centerText" style={{color: 'white', top: '15px', position: 'absolute', width:'100%', textAlign: 'center', fontSize: '100px'}}> Immerse </h1>
+
+      <div className="centerButtons" style={{top: '100px', position: 'absolute', left: '25.5%'}}>
+        <MuiThemeProvider muiTheme={getMuiTheme()}>
+        <TextField
+          hintText="Email Field"
+          floatingLabelText="Email"
+          style={{color: 'white'}}
+          onChange={event => props.onEmailChange(event)}
+        />
+        </MuiThemeProvider>
+        <br />
+        <MuiThemeProvider muiTheme={getMuiTheme()}>
+        <TextField
+          hintText="Password Field"
+          floatingLabelText="Password"
+          type="password"
+          onChange={event => props.onPasswordChange(event)}
+        />
+        </MuiThemeProvider>
+        <br />
+        <br/>
+        <MuiThemeProvider muiTheme={getMuiTheme()}>
+          <RaisedButton buttonStyle={style} label="Sign In" primary={true} onClick={props.submitFn} />
+        </MuiThemeProvider>
+
+        <br/>
+        <br/>
+
+        <div>
+            <MuiThemeProvider muiTheme={getMuiTheme()}>
+              <RaisedButton buttonStyle={style} label="Login As Guest" primary={true} onClick={() => props.toggleGuestLogin(props.submitFn)} />
+            </MuiThemeProvider>
+        </div>
+
+        <br/>
+
+        <div>
+            <Link to="/signup" className="fancyText" style={{color: 'white'}}> Create an Account </Link>
+        </div>
+
+      </div>
+    </div>
+
+    {/*}
     <label htmlFor="email"> Email </label>
     <input type="text" id="email" name="email" onChange={event => props.onEmailChange(event)} />
     <label htmlFor="password"> Password </label>
     <input type="password" id="password" name="password" onChange={event => props.onPasswordChange(event)} />
     <input type="button" id="signin" value="Signin" onClick={props.submitFn} />
     Don't have an account?
-    <Link to="/signup"> Sign up here</Link>
+
+    */}
+
   </div>
 );

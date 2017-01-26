@@ -1,11 +1,10 @@
 import {Entity} from 'aframe-react';
 import React from 'react';
 import 'aframe-bmfont-text-component';
-import Bookmark from './Bookmark';
 import $ from 'jquery';
 
-const Height = 3;
-const Width = 6;
+const Height = 1.5;
+const Width = 3;
 
 export default props => {
   const extraProps = AFRAME.utils.extend({}, props);
@@ -53,7 +52,7 @@ export default props => {
     }
     xCoordinate = (xCoordinate + (width/2.5)).toString(); //bigger modifier moves left
     //temporary
-    console.log('adjustIconCoordinates height:', height)
+    // console.log('adjustIconCoordinates height:', height)
     yCoordinate = (yCoordinate + (height/2.75)).toString(); //bigger modifier moves down
     return (`${xCoordinate} ${yCoordinate} ${zCoordinate}`);
   }
@@ -61,6 +60,7 @@ export default props => {
   //make sure main text doesn't overflow beyond component parameters
  let reduceMainTextSize = (text) => {
    let output = null;
+   // console.log('reduceMainTextSize text:', text)
    if (text.length >= 500) {
      text = text.slice(0, text.length -1);
      let finalPeriod = text.lastIndexOf('. ')
@@ -76,18 +76,19 @@ export default props => {
    }
  }
 
-  let greenAngleCalc = (position) => {
-    console.log('Position in greenAngleCalc:', position, 'type of position:', typeof position)
+  let greenAngleCalc = (position, commentID) => {
+    // console.log('Position in greenAngleCalc:', position, 'type of position:', typeof position);
+    // console.log('Comment ID in TextPlane equals:', commentID)
     position = cardCoordCalc(position);
     let coordinates = position.split(" ").map((element) => Number(element));
     let x = coordinates[0];
     let z = coordinates[2];
     if (z <= 0 && x <= 0){
       return `0 ${90 - Math.abs(Math.atan(z/x) * (180/Math.PI))} 0`
-    } 
+    }
     if (z >= 0 && x >= 0) {
       return `0 ${-90 - Math.abs(Math.atan(z/x) * (180/Math.PI))} 0`
-    } 
+    }
     if (z >= 0 && x <= 0){
       return `0 ${90 + Math.abs(Math.atan(z/x) * (180/Math.PI))} 0`
     }
@@ -114,7 +115,7 @@ let addBookmark = (title) => {
   $.get({
     url: '/addBookmark?exactWikiTitle=' + title,
     success: (data) => {
-      console.log(data);
+      // console.log(data);
     },
     error: (error) => {
       console.error('error in fetch paragraph', error);
@@ -123,61 +124,103 @@ let addBookmark = (title) => {
   });
 };
 
+let adjustTextPosition = (text, textAdjust) => {
+  text = reduceMainTextSize(text);
+  if (text.split(" ").length > 7) {
+    return (textAdjust - 0.2).toString();
+  } else {
+    return textAdjust;
+  }
+}
 
-//  return <Entity id="TextPlane" position={adjustEntityCoordinates(props.position)} rotation={adjustEntityRotation(props.rotation)}>
-  return <Entity id="TextPlane" position={cardCoordCalc(props.position)} rotation={greenAngleCalc(props.position)}>
+let formatTime = (string) => {
+  // // console.log('BLAHHDEEBLAH formatTime string:' + string);
+  let splitArray = string.split(':');
+  return Number(splitArray[0]) > 12 ? `${Number(splitArray[0]) -12}:${splitArray[1]}pm` : `${Number(splitArray[0])}:${splitArray[1]}am`
+}
 
-      <Entity>
+let formatDate = (string) => {
+  // console.log('BLAHHDEEBLEEE formatDate string:' + string);
+  let splitArray = string.split(' ');
+  // console.log('HA LA LA splitArray equals:', splitArray)
+  return `${splitArray[1]} ${splitArray[2]} ${splitArray[3]} at ${formatTime(splitArray[4])}`;
+}
 
-        {/* Assume that props.position === "0 1 -3" */}
+let adjustTimestampPosition = (textAdjust) => {
+  return (textAdjust - 0.5).toString();
+}
 
+  return (
+      <Entity
+        animation__rot={{property: 'rotation', dir: 'normal', dur: 500, loop: false, from: '0 0 0', to: greenAngleCalc(props.position, props.commentID)}}
+        animation__scale={{property: 'scale', dir: 'normal', dur: 500, loop: false, from: '.1 .1 .1', to: '1 1 1'}}
+        id="TextPlane" 
+        onClick={(data) => {
+          // console.log('Within TextPlane.js, event data is:', data.detail.target.id);
+          props.hidePlane();
+        }} 
+        position={cardCoordCalc(props.position)} 
+        rotation={greenAngleCalc(props.position, props.commentID)}
+        // material={{opacity: 0.5, transparent: true}}
+        // easing='easeInOutQuad'
+      >
 
         {/* Background Plane */}
         <Entity
           geometry={`primitive: plane; width: ${Width}; height: ${Height}`}
           // position='0 0 0'
           rotation='0 0 0'
-          material={{color: 'black'}}
+          material={{color: '#436095', shader: 'flat', opacity: 0.75, transparent: true}}
         />
 
         {/* Main Image */}
-        <Entity geometry={`primitive: plane; width: ${(Width/9)*3}; height: ${(Height/3)*2}`}
-            material={{side: 'double', src: 'url(' + props.imageSrc + ')', opacity: 1}}
-            // position={adjustImageCoordinates(props.position, Width, (Height/3)*2)}
-            position={`${(Width/-3.65)} ${(Height/-10)} 0.1`}
-            rotation='0 0 0'
-        >
-        </Entity>
+        <Entity geometry={`primitive: circle; radius: 0.33`}
+          onClick={() => props.planeClick()}
+          material={{side: 'double', src: props.source, opacity: 1, shader: 'flat'}}
+          // position={adjustImageCoordinates(props.position, Width, (Height/3)*2)}
+          position={`-1.1 0.6 0.18`}
+          rotation='0 0 0'
+        />
 
         {/* Header Text */}
         <Entity bmfont-text={{align: 'left', width: '750', color: 'yellow', text: props.header}}
           // position={adjustHeaderTextCoordinates(props.position, Width, Height)}
-          position={`${props.headerAdjust} 1 0.1`}
+          position={`${props.headerAdjust} 0.40 0.1`}
           rotation='0 0 0'
           scale='1.85 1.85 0'
         />
 
         {/* Main Body Text */}
-        <Entity bmfont-text={{align: 'left', width: '775', color: 'white', text: reduceMainTextSize(props.text)}} // Max character length = 500
+        <Entity bmfont-text={{align: 'left', width: '450', color: 'white', text: reduceMainTextSize(props.text)}} // Max character length = 500
           // position={adjustMainTextCoordinates(props.position, Width, Height)}
-          position={`-0.35 ${props.textAdjust - 1.1} 0.1`}
+          position={`-1 ${adjustTextPosition(props.text, props.textAdjust)} 0.24`}
           rotation='0 0 0'
-          scale='0.8 0.8 0'
+          scale='1 1 0'
         />
 
-      </Entity>
+      {/* Timestamp */}
+        <Entity bmfont-text={{align: 'left', width: '450', color: 'white', text: formatDate(props.createdAt.toString())}} // Max character length = 500
+          // position={adjustMainTextCoordinates(props.position, Width, Height)}
+          position={`-0.25 ${adjustTimestampPosition(props.textAdjust)} 0.24`}
+          rotation='0 0 0'
+          scale='0.75 0.75 0'
+        />
 
       {/*Collapse Icon*/}
       <Entity
-            onClick={() => props.hidePlane()}
-            geometry={`primitive: plane; width: ${Width/18}; height: ${Height/9}`}
-            material={{side: 'double', src: 'url(http://i.imgur.com/W4tbzxv.png)', opacity: 0.99}}
-            position={`2.65 1.2 0.1`}
+            commentID={props.commentID}
+            onClick={(data) => {
+              // console.log('Within TextPlane.js, event data is:', data.detail.target.id)
+              props.hidePlane();
+            }}
+            geometry={`primitive: plane; width: 0.25; height: 0.25`}
+            material={{side: 'double', src: 'url(http://i.imgur.com/xgNToss.png)', opacity: 0.99, shader: 'flat'}}
+            position={`1.175 0.475 0.3`}
             rotation='0 0 0'
             scale='1 1 0'
-      >
-      </Entity>
+      />
 
+      {/*Bookmark Button
       <Entity
             onClick={() => addBookmark(props.wikiName)}
             geometry={`primitive: plane; width: ${Width/18}; height: ${Height/9}`}
@@ -187,7 +230,8 @@ let addBookmark = (title) => {
             scale='1 1 0'
       >
       </Entity>
-
+      */}
 
     </Entity>
+  );
 };

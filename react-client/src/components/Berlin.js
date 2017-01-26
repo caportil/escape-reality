@@ -27,6 +27,7 @@ class Berlin extends React.Component {
       showPlatz: false,
       showStation: false,
       showBahn: false,
+      currentPhrase: '',
       allTitles: ['Potsdamer_Platz', 'Berlin_Potsdamer_Platz_station', 'Deutsche_Bahn']
     };
   }
@@ -34,7 +35,7 @@ class Berlin extends React.Component {
   componentWillMount () {
     this.props.getParagraph(this.state.allTitles, allParagraphs => {
       this.setState( {allParagraphs: allParagraphs} );
-      console.log('🍊  this.state allParagraphs', this.state.allParagraphs);
+      // console.log('🍊  this.state allParagraphs', this.state.allParagraphs);
     });
   }
 
