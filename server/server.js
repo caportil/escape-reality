@@ -206,6 +206,16 @@ app.get('/getWikiArticleTitle', (req, res) => {
   utils.fetchArticleWikiName(req, res);
 });
 
+app.get('/retrieveLikes', (req, res) => {
+  userController.findOne({where: {email: req.session.email}}, user => {
+    likeController.findAll({where: {user_id: user.get('id')}}, likes => {
+      // console.log('After running /retrieveLikes, returned data is:', likes)
+      res.send(likes);
+    })    
+  })
+
+})
+
 app.get('/addBookmark', (req, res) => {
   userController.findOne({where: {email: req.session.email}}, user => {
     bookmarkController.findOne({where: {title: req.query.exactWikiTitle}},
@@ -253,10 +263,14 @@ app.post('/like', (req, res) => {
       likeController.findOrCreate({where: {user_id: user.get('id'), photo_id: photo.get('id')}}, like => {
         res.status(200).send(like);
       })
+
+      // likeController.update({user_id: user.get('id'), photo_id: photo.get('id')}, {where: {user_id: user.get('id'), photo_id: photo.get('id')}}, like => {
+      //   res.status(200).send(like);
+      // })
+
     })
   });
 });
-
 
 app.get('/commentData', (req, res) => {
   photoController.findOne({where: {title: req.query.photoName}}, photo => {

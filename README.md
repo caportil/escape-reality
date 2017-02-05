@@ -1,6 +1,27 @@
-# Escape
+# Immerse
 
-> Escape from the stress of everyday life and explore the world around you
+> <p> Immerse yourself virtually into your friends 360 degree photos. </p> <p> Use our voice-recongition feature to add comments on your friends photos. </p> <p> Upload your own pictures so your friends can join you. </p>
+
+ <p align="center"> Explore Timeline </p>
+
+![Lobby](./diagrams/lobby.jpg?raw=true "Lobby")
+
+ <p align="center"> Photo View </p>
+
+![View](./diagrams/view.jpg?raw=true "view")
+
+ <p align="center"> Photo View with Comment </p>
+
+![Comment](./diagrams/comment.jpg?raw=true "Comment")
+
+ <p align="center"> Signin Page </p>
+
+![Signin](./diagrams/signin.png?raw=true "Signin")
+
+ <p align="center"> Main Lobby </p>
+
+![LobbyFirst](./diagrams/lobbyfirst.png?raw=true "LobbyFirst")
+
 
 ## Team
 
@@ -54,12 +75,6 @@ View the project roadmap [here](https://github.com/lowtalkers/escape-reality/iss
 Database in MariaDB, using Sequelize ORM
 <p align="center">
   <img src="/diagrams/schema.png?raw=true"/>
-</p>
-
-## API
-##### Public End Points
-<p align="center">
-  <img src="/diagrams/routes.png?raw=true"/>
 </p>
 
 ## Deployment

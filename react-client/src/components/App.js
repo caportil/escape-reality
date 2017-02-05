@@ -54,9 +54,11 @@ class App extends React.Component {
       lastName: '',
       profilePic: '',
       bigPic: '',
+      currentPic: false,
       pics: [],
+      likedPhotos: [],
       addCommentMode: false,
-      comments: [], //[{x: 1.24324324, y: 2, z:3, id: 0, show: false }, {xyz, 1: false}]
+      comments: [], 
       currentComment: {},
       commentCounter: 0,
       displayedComments: [],
@@ -69,6 +71,7 @@ class App extends React.Component {
       typedCommentBox: true,
       guestLogin: false,
       flag: false,
+      infoPlane: true,
 		};
   }
 
@@ -76,6 +79,7 @@ class App extends React.Component {
     * @param {object} event click event object
     * @returns {boolean} true or false if rules are followed
     */
+
 
   getParagraph(allTitles, setStateParagraph) {
     const result = {};
@@ -106,12 +110,9 @@ class App extends React.Component {
     recurse(0);
   }
 
-  // getArticleName() {
-
-
-
-  // }
-
+  closeLegend() {
+    this.setState({infoPlane: false})
+  }
 
   onEmailChange(event) {
     this.setState({ email: event.target.value });
@@ -132,6 +133,7 @@ class App extends React.Component {
 
   getAllPhotos() {
     let self = this;
+    // console.log('RUNNING getAllPhotos !!!')
     $.get({
       url: '/topPics',
       success: (data) => {
@@ -151,7 +153,6 @@ class App extends React.Component {
       url: '/commentData',
       data: {photoName: this.state.bigPic},
       success: (data) => {
-        // console.log('got comment data from server:', data);
         if (data.comments.length > 0) {
           data.comments = data.comments.map(function(comment) {
             var coords = comment.coordinates.split(' ');
@@ -178,15 +179,9 @@ class App extends React.Component {
       data: {photoName: this.state.bigPic},
       success: (data) => {
         let finalElement = data.comments[data.comments.length - 1];
-        // console.log('got comment data from server:', data, 'final element:', finalElement);
         if (data.comments.length > 0) {
           output = new Date(finalElement.createdAt);
-          // console.log('Boi stop getCreatedAt actually ran and its output isss:', output);
-          // return output;
-
-          // console.log('Bzzz output is:', output);
           newObject['createdAt'] = output;
-          // console.log('99999 newObject is:', newObject);
           self.setState({
             comments: self.state.comments.concat([newObject])
           });
@@ -199,8 +194,6 @@ class App extends React.Component {
         $('.error').show();
       }
     });
-
-
 
   }
 
@@ -221,7 +214,6 @@ class App extends React.Component {
             profilePic: 'https://s3.amazonaws.com/vrpics/default-userpic_256x256.png'
           });
         }
-        // console.log('Got userpic from server:', self.state.profilePic);
         if (cb) {
           cb()
         }
@@ -235,14 +227,9 @@ class App extends React.Component {
 
   componentDidMount () {
     if (this.props.router.location.pathname.indexOf('/sign') < 0) {
-      // console.log('🍊  running changeProfilePic');
       this.getAllPhotos();
       this.changeProfilePic();
     }
-  }
-
-  componentDidUpdate () {
-    // console.log('After rendering, current comment mode:', this.state.addCommentMode, 'and comments are:', this.state.comments)
   }
 
   /** This function when invoked will submit email and password. */
@@ -256,18 +243,19 @@ class App extends React.Component {
 
     /** Submit email and password for verification */
     if (isEmail(email) && !self.state.guestLogin) {
-      // console.log('Guest login is false')
       $.post({
         url: this.props.router.location.pathname,
         contentType: 'application/json',
         data: JSON.stringify({email: email, password: password, firstName: firstName, lastName: lastName}),
         success: (data) => {
-          // console.log('Sucessful authentication', data, data.auth);
           if (data.auth) {
             self.props.router.replace('/dashboard');
             // If authenticated, then get profile picture
             // from server to display it
-            self.changeProfilePic(() => {self.getAllPhotos()});
+            self.changeProfilePic(() => {
+              console.log('Running within the changeProfilePic')
+              self.getAllPhotos();
+            });
           } else if (data === 'User exists!') {
             // console.log('User exists!');
           }
@@ -278,18 +266,18 @@ class App extends React.Component {
         },
       });
     } else if (self.state.guestLogin) {
-      // console.log("Guest login c'est True")
       $.post({
         url: '/guestLogin',
         contentType: 'application/json',
         data: JSON.stringify({email: 'guest@guest.com', password: 'guest', firstName: 'Guest', lastName: ''}),
         success: (data) => {
-          // console.log('Sucessful GUEST authentication', data, data.auth);
           if (data.auth) {
             self.props.router.replace('/dashboard');
             // If authenticated, then get profile picture
             // from server to display it
-            self.changeProfilePic(() => {self.getAllPhotos()});
+            self.changeProfilePic(() => {
+              self.getAllPhotos();
+            });
           } else if (data === 'User exists!') {
             // console.log('User exists!');
           }
@@ -299,20 +287,27 @@ class App extends React.Component {
           $('.error').show();
         },
       });
-      // self.clearGuestComments();
     } else {
       // console.log('Not a valid email')
     }
   }
 
   likeSubmitFn() {
-    // console.log('in like submit function');
+    let self = this;
     $.post({
       url: '/like',
       contentType: 'application/json',
       data: JSON.stringify({photoName: this.state.bigPic}),
       success: (data) => {
-        // console.log(data);
+        let index = self.state.likedPhotos.indexOf(data.photo_id);
+        if (index > -1) {
+          let array = self.state.likedPhotos;
+          let updatedArray = array.slice(0, index).concat(array.slice(index + 1))
+          self.setState({likedPhotos: updatedArray})
+        } else {
+          let array = [data.photo_id];
+          self.setState({likedPhotos: self.state.likedPhotos.concat(array)})
+        }
       },
       error: (error) => {
         $('.error').show();
@@ -320,8 +315,27 @@ class App extends React.Component {
     });
   }
 
+  getLikes() {
+    let self = this;
+    // console.log('props.router is currently:',  self.props.router)
+    $.get({
+      url: '/retrieveLikes',
+      success: (data) => {
+        console.log('after running getLikes, retrieved data is:', data);
+        let photoIDs = data.map(likeData => likeData.photo_id);
+        if (self.state.likedPhotos.length !== photoIDs.length) {
+          // console.log('photoIDs:', photoIDs, 'while state\'s likedPhotos is:', self.state.likedPhotos);
+          self.setState({likedPhotos: photoIDs})
+        }
+      },
+      error: (error) => {
+        // console.log('error retrieving likes', error);
+        $('.error').show();
+      }
+    })
+  }
+
   commentSubmitFn(phrase, coordinates) {
-    // console.log('in comment submit function; current phrase is:', phrase, '🦄🦄🦄🦄🦄🦄 coords', coordinates);
     $.post({
       url: '/comment',
       contentType: 'application/json',
@@ -336,13 +350,11 @@ class App extends React.Component {
   }
 
   clearGuestComments() {
-    // console.log('Running clearGuestComments...')
     $.post({
       url: '/clearGuestComments',
       contentType: 'application/json',
       data: JSON.stringify({test: 'test'}),
       success: data => {
-        // console.log('clearGuestComments was an official success');
       },
       error: error => {
         // console.log('clearGuestComments was an abject failure')
@@ -352,7 +364,6 @@ class App extends React.Component {
   }
 
   addComment (coordinates) {
-    //will we need to use async here?
     var self = this;
     self.setState({
       recording: true
@@ -365,8 +376,6 @@ class App extends React.Component {
     var self = this;
 
     if (annyang) {
-      // console.log('🐞🐞🐞🐞🐞voice activated in callback', coordinates);
-
       // console.log('in annyang!!!');
       annyang.start();
 
@@ -381,9 +390,7 @@ class App extends React.Component {
           firstName: self.state.currentUser,
           src: '#profilePic'
         };
-        let newObject = Object.assign(commentObject, gCoordinates); // {x:0 }
-        // console.log('addComment newObject:', newObject, 'current comments state array:', self.state.comments)
-        // self.getComments();
+        let newObject = Object.assign(commentObject, gCoordinates);
         self.getCreatedAt(newObject);
       }, this);
     } else {
@@ -403,8 +410,6 @@ class App extends React.Component {
         commentsOn: false
       });
 
-    //does annyang.abort wait until the voice recognition has processed before invoking commentsubmitFn?
-    // console.log('Phrase right after aborting is:', phrase)
     this.commentSubmitFn(phrase, coordinates);
   }
 
@@ -421,13 +426,13 @@ class App extends React.Component {
       src: '#profilePic'
     };
     let newObject = Object.assign(commentObject, gCoordinates); // {x:0 }
-    // console.log('addComment newObject:', newObject, 'current comments state array:', self.state.comments)
     self.getCreatedAt(newObject);
   }
 
-  changeBigPic (val) {
+  changeBigPic (val, id) {
     this.setState({
-      bigPic: val
+      bigPic: val,
+      currentPic: id
     });
   }
 
@@ -456,7 +461,6 @@ class App extends React.Component {
   hideComment (commentID) {
     let indexToHide = this.state.displayedComments.indexOf(commentID);
     let array = this.state.displayedComments;
-    // console.log(this.state.displayedComments.splice(indexToHide, 1));
     array.splice(indexToHide, 1);
     this.setState({
       displayedComments: array
@@ -464,7 +468,6 @@ class App extends React.Component {
   }
 
   clearComments () {
-    // console.log('clearing comments!!!!!')
     this.setState({
       comments: []
     });
@@ -483,7 +486,6 @@ class App extends React.Component {
   }
 
   toggleGuestLogin (callback) {
-    // console.log('Toggled toggleGuestLogin!')
     this.setState({
       guestLogin: !this.state.guestLogin
     })
@@ -492,16 +494,12 @@ class App extends React.Component {
 
   renderComments () {
     let self = this;
-    // console.log('self.state.comments equals:', self.state.comments)
     return (
       self.state.comments.map((comment, idx) => {
-        // console.log('While mapping the fetched comments, the current comment is:', comment);
         return (
         <UnifiedComponent
          look-at="[camera]"
           clickFunction={() => {
-            // console.log('Onclick event is currently:', event)
-            // console.log('ID ')
             self.showComment(idx);
           }}
           commentID= {idx}
@@ -509,16 +507,12 @@ class App extends React.Component {
           position={`${Number(comment.x)} ${Number(comment.y)} ${Number(comment.z)}`}
           rotation="0 0 0"
           hidePlane={() => {
-            // // console.log('Hiding plane now... Data is:')
-            // self.setState({showComment: false});
-            // self.getAllPhotos();
             self.hideComment(idx);
           }}
           scale='0 0 0'
           header={comment.firstName}
-          // header='Kobe'
           wikiName='Louvre_Pyramid'
-          headerAdjust='-0.75' // lower moves it to the left, higher to the right
+          headerAdjust='-0.8' // lower moves it to the left, higher to the right
           text={comment.body}
           textAdjust='-0.1' //lower moves this down, higher moves this up
           imageSrc='https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Le_Louvre_-_Aile_Richelieu.jpg/800px-Le_Louvre_-_Aile_Richelieu.jpg '
@@ -535,8 +529,6 @@ class App extends React.Component {
     let vrView = '';
     let imageName = '';
     let resizedImageLink = '';
-
-    console.log('Rendering...');
 
     const images = this.state.pics.map(pic => {
       let imageName = pic.title.split('.')[0];
@@ -600,8 +592,6 @@ class App extends React.Component {
                 uploadBar={this.uploadBar.bind(this)}
               />
               
-
-              // <InputForm />
       );
 
     } else {
@@ -610,12 +600,15 @@ class App extends React.Component {
             <Home
             router={this.props.router}
             pics={this.state.pics}
+            getLikes={this.getLikes.bind(this)}
             changeBigPic={this.changeBigPic.bind(this)} />
           );
       } else {
-        // console.log('*********rendering image')
         vrView = <Image
+                    self={self}
                     bigPic={this.state.bigPic}
+                    currentPic={this.state.currentPic}
+                    likedPhotos={this.state.likedPhotos}
                     commentSubmitFn={this.commentSubmitFn.bind(this)}
                     likeSubmitFn={this.likeSubmitFn.bind(this)}
                     changeBigPic={this.changeBigPic.bind(this)}
@@ -623,6 +616,7 @@ class App extends React.Component {
                     changeCommentMode={this.changeCommentMode.bind(this)}
                     comments={this.state.comments}
                     getComments={this.getComments.bind(this)}
+                    getLikes={this.getLikes.bind(this)}
                     addComment={this.addComment.bind(this)}
                     addTypedComment={this.addTypedComment.bind(this)}
                     voiceComment={this.voiceComment.bind(this)}
@@ -635,19 +629,6 @@ class App extends React.Component {
                   />
 
       }
-
-        /*
-          For development, we turn off fusing cursor (too slow) to allow clicking
-          For deployment, we turn on fusing cursor (so mobile phones can gaze to "click")
-
-              <a-cursor
-                fuse="true" fuseTimeout="800"
-                animation__fuse="property: scale; easing: easeOutExpo; startEvents: stateadded; from: 7 7 7; to: 1 1 1; dur: 2000"
-                geometry="radiusInner:0.02; radiusOuter:0.03; segmentsTheta:64"
-                material="color: #61ffff; shader: flat"
-              >
-              </a-cursor>
-         */
 
       return (
           <Scene antialias="true">
@@ -663,7 +644,6 @@ class App extends React.Component {
 
             <a-assets>
               {images}
-              {fullImages}
               {bigPic}
               {commentPics}
               <img id="profilePic" crossOrigin="anonymous" src={self.state.profilePic} />
@@ -671,8 +651,11 @@ class App extends React.Component {
 
               <img id="close" crossOrigin="anonymous" src="https://s3.amazonaws.com/vrpics/ui-icons/icon-home_512x512.png" />
               <img id="like" crossOrigin="anonymous" src="https://s3.amazonaws.com/vrpics/ui-icons/icon-favorite_512x512.png" />
+              <img id="liked" crossOrigin="anonymous" src="http://i.imgur.com/XTLYqU3.png" />
+
               <img id="mic" crossOrigin="anonymous" src="https://s3.amazonaws.com/vrpics/ui-icons/icon-mic_512x512.png" />
               <img id="micActivated" crossOrigin="anonymous" src="https://s3.amazonaws.com/vrpics/ui-icons/icon-mic-activated_512x512.png" />
+              <img id="info" crossOrigin="anonymous" src="http://i.imgur.com/Gu5WR5K.png" />
 
 
               <img id="bookmark" crossOrigin="anonymous" src="https://s3.amazonaws.com/vrpics/plus-hi.png" />
@@ -684,222 +667,6 @@ class App extends React.Component {
             {vrView}
 
             {self.renderComments()}
-
-            {self.state.typedCommentBox ? 
-            	/*
-            	<UnifiedComponent
-            	 look-at="[camera]"
-            	  clickFunction={() => {
-            	    // console.log('Onclick event is currently:', event)
-            	    // console.log('ID ')
-            	    self.showComment(idx);
-            	  }}
-            	  commentID= {idx}
-            	  source={comment.src}
-            	  position={`${Number(comment.x)} ${Number(comment.y)} ${Number(comment.z)}`}
-            	  rotation="0 0 0"
-            	  hidePlane={() => {
-            	    // // console.log('Hiding plane now... Data is:')
-            	    // self.setState({showComment: false});
-            	    self.getAllPhotos();
-            	    self.hideComment(idx);
-            	  }}
-            	  scale='0 0 0'
-            	  header={comment.firstName}
-            	  // header='Kobe'
-            	  wikiName='Louvre_Pyramid'
-            	  headerAdjust='-0.75' // lower moves it to the left, higher to the right
-            	  text={comment.body}
-            	  textAdjust='-0.1' //lower moves this down, higher moves this up
-            	  imageSrc='https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Le_Louvre_-_Aile_Richelieu.jpg/800px-Le_Louvre_-_Aile_Richelieu.jpg '
-            	  displayedComments={self.state.displayedComments}
-            	  profilePic={self.state.profilePic}
-            	  createdAt={comment.createdAt}
-            	/>
-							*/
-
-
-							//Form components
-							/*
-							<Entity
-								position="0 0 -2"
-								rotation="0 0 0"
-							>
-								<div onSubmit={(event) => {
-									event.preventDefault();
-									// console.log('CommentText submitted! Body:' + document.getElementsByName('CommentText')[0].value);
-									}}>
-							  	<h1>Hello, world.</h1>
-							  	<form>Comment: <input name="CommentText" />
-							  	<button>Submit</button>
-							  	</form>
-							  </div>
-							 </Entity>
-            	*/
-
-
-
-
-
-            	//Test Plain Component
-            	/*
-            	<Entity
-            		position="0 0 -3"
-            		rotation="0 0 0"
-            		geometry="primitive: plane; height: 0.5; width: 0.5"
-            		material="color: black"
-            	/>
-							*/
-
-							//Test Form
-							/*
-							<Entity position="0 0 -3" rotation="0 0 0">
-								<div onSubmit={(event) => {
-									event.preventDefault();
-									// console.log('CommentText submitted! Body:' + document.getElementsByName('CommentText')[0].value);
-								}}>
-							  	<h1>Please enter your comment:</h1>
-							  	<form>Comment: <input name="CommentText" />
-							  	<button>Submit</button>
-							  	</form>
-							  </div>
-							 </Entity>
-							*/
-
-							 //Second Test Form
-							/*
-            	<Entity 
-            		// bmfont-text={{align: 'left', width: '750', color: 'yellow', text: "Testing"}}
-            	  // position={adjustHeaderTextCoordinates(props.position, Width, Height)}
-            	  input={{color: 'red', text: "Test Form"}}
-            	  position='0 1 -2'
-            	  rotation='0 0 0'
-            	  scale='1.85 1.85 0'
-            	/>
-							*/
-
-
-
-
-
-
-
-							//Test UnifiedComponent
-							/*
-							<UnifiedComponent
-							  look-at="[camera]"
-							  clickFunction={() => {
-							    // console.log('Onclick event is currently:', event)
-							    // console.log('ID ')
-							    // self.showComment(idx);
-							  }}
-							  commentID= "0"
-							  source="https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Assembled_Google_Cardboard_VR_mount.jpg/1024px-Assembled_Google_Cardboard_VR_mount.jpg"
-							  position="0 0 -2"
-							  rotation="0 0 0"
-							  hidePlane={() => {
-							    // // console.log('Hiding plane now... Data is:')
-							    // self.setState({showComment: false});
-
-							    // self.getAllPhotos();
-							    // self.hideComment(idx);
-							    // console.log('hidePlane function invoked')
-							  }}
-							  scale='0 0 0'
-							  header='Test User'
-							  // header='Kobe'
-							  wikiName='Louvre_Pyramid'
-							  headerAdjust='-0.75' // lower moves it to the left, higher to the right
-							  text="Test Comment"
-							  textAdjust='-0.1' //lower moves this down, higher moves this up
-							  imageSrc='https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Le_Louvre_-_Aile_Richelieu.jpg/800px-Le_Louvre_-_Aile_Richelieu.jpg '
-							  displayedComments={self.state.displayedComments}
-							  profilePic={self.state.profilePic}
-							  createdAt="2016-12-01 20:39:59"
-							/>
-							*/
-
-							//Sample TextPlane
-							/*
-							<TextPlane 
-							  planeClick={() => // console.log('displayedComments is currentlyyyy:')}
-
-							  id="sampleFormTextPlane"
-							  source="https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Assembled_Google_Cardboard_VR_mount.jpg/1024px-Assembled_Google_Cardboard_VR_mount.jpg"
-							  position="0 0 -2"
-							  rotation="0 0 0"
-							  hidePlane={() => {
-							    // // console.log('Hiding plane now... Data is:')
-							    // self.setState({showComment: false});
-
-							    // self.getAllPhotos();
-							    // self.hideComment(idx);
-							    // console.log('hidePlane function invoked')
-							  }}
-
-							  scale='0 0 0'
-							  header='Test User'
-							  // header='Kobe'
-							  wikiName='Louvre_Pyramid'
-							  headerAdjust='-0.75' // lower moves it to the left, higher to the right
-							  text="Test Comment"
-							  textAdjust='-0.1' //lower moves this down, higher moves this up
-							  imageSrc='https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Le_Louvre_-_Aile_Richelieu.jpg/800px-Le_Louvre_-_Aile_Richelieu.jpg '
-							  commentID="0"
-							  profilePic={self.state.profilePic}
-							  createdAt="Sat Jan 14 2017 00:46:14 GMT-0800 (PST)"
-							/>
-							*/
-
-							null
-
-            	:
-
-            	null
-            }
-
-
-              {self.state.guestLogin? 
-
-              // <Entity
-              //   position="0 2 -3"
-              //   rotation="0 0 0"
-              //   geometry="primitive: plane; height: 0.5; width: 0.5"
-              //   material="color: red"
-              // />
-
-              null
-
-              :
-
-              null
-            }
-
-
-
-{/*
-            {self.state.showComment?
-
-                      <TextPlane
-                        id="courtyardCard"
-                        hidePlane={() => self.setState({showComment: false})}
-
-                        position={`${self.state.comments[0].x} ${self.state.comments[0].y} ${self.state.comments[0].z}`}
-                        rotation="-2.86 53.86 2.86"
-
-                        scale='0 0 0'
-                        header='Napoleon Courtyard'
-                        headerAdjust='-1.5' // lower moves it to the left, higher to the right
-                        text= {`'Cour Napolon', or Napoleon's Courtyard, is named after Napoleon III, under whose rule the Louvre Palace underwent several structural changes to its design. The nephew and heir of Napoleon I, he was the first President of France to be elected by a direct popular vote. He was blocked by the Constitution and Parliament from running for a second term, so he organized a coup d'état in 1851 and then took the throne as Napoleon III on 2 December 1852.`}
-                        textAdjust='0' //lower moves this down, higher moves this up
-                        imageSrc='https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Le_Louvre_-_Aile_Richelieu.jpg/800px-Le_Louvre_-_Aile_Richelieu.jpg '
-                      />
-
-                      :
-
-                      null
-            }
-*/}
 
           </Scene>
         );
